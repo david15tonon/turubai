@@ -24,10 +24,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <div className="flex h-screen">
+          {/* Sidebar / Toolbar */}
+          <aside className="w-56 border-r border-gray-300 p-4 bg-gray-100">
+            {/* Ici tu peux importer et afficher ton composant Toolbar */}
+            {/* <Toolbar /> */}
+            Sidebar / Toolbar
+          </aside>
+
+          {/* Main content area */}
+          <main className="flex-grow overflow-auto bg-white">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
