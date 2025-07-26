@@ -1,39 +1,55 @@
 "use client";
-import React, { useEffect, useRef } from "react";
-import { fabric } from "fabric";
+import React, { useEffect, useRef, useState } from "react";
+// import dynamique de fabric dans le useEffect
 
 export default function EditorPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricRef = useRef<fabric.Canvas | null>(null);
+  const [fabricRef, setFabricRef] = useState<any>(null); // Fabric.Canvas
+  const [fabricNS, setFabricNS] = useState<any>(null); // Namespace Fabric
 
   useEffect(() => {
-    if (canvasRef.current) {
-      fabricRef.current = new fabric.Canvas(canvasRef.current, {
+    let fabricInstance: any;
+    let fabricNSLocal: any;
+    let disposed = false;
+    import("fabric").then((mod) => {
+      if (!canvasRef.current) return;
+      // Correction robuste pour tous les cas d'import
+      if (mod.Canvas) {
+        fabricNSLocal = mod;
+      } else if (mod.fabric && mod.fabric.Canvas) {
+        fabricNSLocal = mod.fabric;
+      } else {
+        throw new Error("Impossible de trouver Fabric.Canvas dans l'import dynamique !");
+      }
+      setFabricNS(fabricNSLocal);
+      fabricInstance = new fabricNSLocal.Canvas(canvasRef.current, {
         width: 600,
         height: 800,
         backgroundColor: "#fff",
       });
-    }
+      setFabricRef(fabricInstance);
+    });
     return () => {
-      fabricRef.current?.dispose();
+      disposed = true;
+      if (fabricInstance) fabricInstance.dispose();
     };
   }, []);
 
   const addText = () => {
-    if (fabricRef.current) {
-      const text = new fabric.IText("Nouveau texte", {
+    if (fabricRef && fabricNS) {
+      const text = new fabricNS.IText("Nouveau texte", {
         left: 100,
         top: 100,
         fontSize: 24,
         fill: "#222"
       });
-      fabricRef.current.add(text).setActiveObject(text);
+      fabricRef.add(text).setActiveObject(text);
     }
   };
 
   const addRect = () => {
-    if (fabricRef.current) {
-      const rect = new fabric.Rect({
+    if (fabricRef && fabricNS) {
+      const rect = new fabricNS.Rect({
         left: 150,
         top: 150,
         fill: "#4F46E5",
@@ -42,28 +58,28 @@ export default function EditorPage() {
         rx: 8,
         ry: 8,
       });
-      fabricRef.current.add(rect).setActiveObject(rect);
+      fabricRef.add(rect).setActiveObject(rect);
     }
   };
 
   const addCircle = () => {
-    if (fabricRef.current) {
-      const circle = new fabric.Circle({
+    if (fabricRef && fabricNS) {
+      const circle = new fabricNS.Circle({
         left: 250,
         top: 250,
         fill: "#22D3EE",
         radius: 40,
       });
-      fabricRef.current.add(circle).setActiveObject(circle);
+      fabricRef.add(circle).setActiveObject(circle);
     }
   };
 
   // Pour rafraîchir la toolbar lors de la sélection
-  const [selected, setSelected] = React.useState<fabric.Object | null>(null);
+  const [selected, setSelected] = React.useState<any>(null);
 
   useEffect(() => {
-    if (!fabricRef.current) return;
-    const canvas = fabricRef.current;
+    if (!fabricRef) return;
+    const canvas = fabricRef;
     const handleSelection = () => {
       setSelected(canvas.getActiveObject() || null);
     };
@@ -75,7 +91,7 @@ export default function EditorPage() {
       canvas.off("selection:updated", handleSelection);
       canvas.off("selection:cleared");
     };
-  }, []);
+  }, [fabricRef]);
 
   // Suppression de l'objet sélectionné
   const deleteSelected = () => {
